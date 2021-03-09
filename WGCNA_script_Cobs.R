@@ -1,4 +1,26 @@
-##obtain datExpr in main script "WGCNA_script.R"
+######read in counts and normalise#########
+#source("http://bioconductor.org/biocLite.R")
+#biocLite( "DESeq2" )
+library("DESeq2")
+
+cobs.counts <- read.table("Counts/cobs.counts",header=T,row.names=1)
+cobs.design <- read.table("cobs.samples.csv",header=T)
+
+#reduce to only contain mated ants
+cobs.counts <- cobs.counts[ , colnames(cobs.counts) %in% cobs.design[ cobs.design$mating == "mated" & cobs.design$sympatry %in% c("sympatric",NA), "Sample"]]
+cobs.design <- cobs.design[cobs.design$mating == "mated" & cobs.design$sympatry %in% c("sympatric",NA), 1:3]
+
+##add headers to counts & exclude irrelevant lines
+colnames(cobs.counts) <- sort(cobs.design$Sample)
+cobs.design <- cobs.design[order(cobs.design$Sample),]  #should be in same order as counts
+cobs.design$age_bin <- c(rep(0, 7), rep(1,7) )
+
+
+##make deseq2 object and extract normalised counts
+dds <- DESeqDataSetFromMatrix(countData = cobs.counts, colData = cobs.design, design= ~ age)
+dds <- DESeq(dds)
+
+datExpr <- datExpr[ rownames(datExpr) %in% cobs.design[ cobs.design$age == "young","Sample"],]
 
 
 ##remove genes with expression less than 10 in > 12 samples (90%)
